@@ -28,12 +28,13 @@ public class Application {
             System.out.println( "-->" + Objects.toString( confProp ));
         }
 
-        {
+        {  
             final Object obj = cac.getBeanFactory().getBean( "application" );
               
             System.out.println( Objects.toString( obj ));
 
             final Application instance = Application.class.cast( obj );
+            // wiredされているのなら == である
             if( instance.confProp == cac.getBeanFactory().getBean( com.example.lucy.ConfProp.class ) ){
                 System.out.println( "hello world" );
             }
