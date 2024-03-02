@@ -16,12 +16,14 @@ public class Application {
         final org.springframework.context.ConfigurableApplicationContext cac = 
             SpringApplication.run( Application.class, args);
         {
+            // Application Context に登録されている名前一覧を取得する
             final var ite = cac.getBeanFactory().getBeanNamesIterator();
             while( ite.hasNext() ){
                 System.out.println( "\""+java.util.Objects.toString( ite.next()+"\"" ));
             }
         }
         {
+            // confProp を実際に取得する
             final com.example.lucy.ConfProp confProp = cac.getBeanFactory().getBean( com.example.lucy.ConfProp.class );
             System.out.println( "-->" + Objects.toString( confProp ));
         }
