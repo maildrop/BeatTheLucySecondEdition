@@ -7,6 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 
+/**
+   SpringBoot1Application 
+
+*/
 // com.example.lucy.Application
 @SpringBootApplication
 @Configuration
@@ -30,17 +34,17 @@ public class Application {
             /*
               今、SpringApplication のインスタンス application が持つ context の BeanFactory() を取得したいので、
               SpringApplicationの Hook を利用して、準備が完了した時に、 contextRef に ConfigurableApplicationContext を設定する。
+
+
             */
 
-            /*
-              SpringApplication にフックをかける。 
-            */
             final SpringApplication application = new SpringApplication( Application.class );
 
+            // SpringApplication にフックをかける。 
             SpringApplication.withHook( (springApplication) -> new org.springframework.boot.SpringApplicationRunListener(){
                     @Override
                     public final void ready( final org.springframework.context.ConfigurableApplicationContext context ,
-                                             final java.time.Duration timeTaken ){
+                                             final java.time.Duration timeTaken){
                         synchronized( contextRef ){
                             contextRef.set( context );
                             contextRef.notifyAll();
@@ -53,49 +57,49 @@ public class Application {
             try{
                 // 条件変数 contextRef が null を指している間は、wait() で待機する
                 while( Objects.isNull( contextRef.get() ) ){
-                    contextRef.wait();
-                }
-
-                {
-                    final org.springframework.context.ConfigurableApplicationContext context 
-                        = contextRef.get();
-                    
-                    assert ( Objects.nonNull( context ));
-                    
-                    if( Objects.nonNull( context )){
-                        {
-                            // Application Context に登録されている名前一覧を取得する
-                            final var ite = context.getBeanFactory().getBeanNamesIterator();
-                            while( ite.hasNext() ){
-                                System.out.println( "\""+java.util.Objects.toString( ite.next()+"\"" ));
-                            }
-                        }
-                        
-                        {
-                            // confProp を実際に取得する
-                            final com.example.lucy.ConfProp confProp = context.getBeanFactory().getBean( com.example.lucy.ConfProp.class );
-                            synchronized( confProp ){
-                                System.out.println( "-->" + Objects.toString( confProp ));
-                            }
-                        }
-                        
-                        {
-                            // confProp は application に Autowired された Bean である。
-                            final Object obj = context.getBeanFactory().getBean( "application" );
-                            
-                            System.out.println( Objects.toString( obj ));
-                                
-                            final Application instance = Application.class.cast( obj );
-                            // wiredされているのなら == である
-                            if( instance.confProp == context.getBeanFactory().getBean( com.example.lucy.ConfProp.class ) ){
-                                System.out.println( "hello world" );
-                            }
-                        }
-                    }
+                    contextRef.wait(); // 上の SpringApplicationRunListener#read() の notifyAll() で戻ってくる
                 }
             }catch( final InterruptedException ie ){
-                
+                // 途中で割り込みがかかると while を抜けてくる。 context の値は null か 設定されてるかのどちらか
+                logger.warning( Objects.toString( ie ) );
             }
-        }
+            
+            /*
+              条件変数の条件が整った（かもしれない）ので、Bean の調査を行う。
+             */
+            final org.springframework.context.ConfigurableApplicationContext context 
+                = contextRef.get();
+
+            if( Objects.nonNull( context )){
+                {
+                    // Application Context に登録されている名前一覧を取得する
+                    final var ite = context.getBeanFactory().getBeanNamesIterator();
+                    while( ite.hasNext() ){
+                        System.out.println( "\""+java.util.Objects.toString( ite.next()+"\"" ));
+                    }
+                }
+                
+                {
+                    // confProp を実際に取得する
+                    final com.example.lucy.ConfProp confProp = context.getBeanFactory().getBean( com.example.lucy.ConfProp.class );
+                    synchronized( confProp ){
+                        System.out.println( "-->" + Objects.toString( confProp ));
+                    }
+                }
+                
+                {
+                    // confProp は application に Autowired された Bean である。
+                    final Object obj = context.getBeanFactory().getBean( "application" );
+                    
+                    System.out.println( Objects.toString( obj ));
+                    
+                    final Application instance = Application.class.cast( obj );
+                    // wiredされているのなら == である
+                    if( instance.confProp == context.getBeanFactory().getBean( com.example.lucy.ConfProp.class ) ){
+                        System.out.println( "hello world" );
+                    }
+                }
+            }
+        } //synchronized 
     }
 }
